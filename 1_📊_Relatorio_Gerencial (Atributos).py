@@ -48,7 +48,7 @@ except:
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
     # Recomendado usar o flash para rapidez ou o pro para maior precisão
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemma-4-31b-it')
 
 def ler_conversa_completa(c_id):
     url = f"https://api.intercom.io/conversations/{c_id}"
