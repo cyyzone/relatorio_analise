@@ -184,17 +184,25 @@ def process_data(conversas, mapping, admin_map):
         else:
             origem = "Receptiva (Cliente)"
 
-        # NOVA REGRA: Verifica se existe ticket de backoffice atrelado
+        # NOVA REGRA: Verifica se existe ticket de backoffice atrelado e pega o ID
         tem_ticket = "Não"
+        lista_tickets = []
         
         objetos_vinculados = c.get('linked_objects', {}).get('data', [])
         for obj in objetos_vinculados:
             if obj.get('type') == 'ticket':
                 tem_ticket = "Sim"
-                break
+                if obj.get('id'):
+                    lista_tickets.append(str(obj.get('id')))
                 
-        if tem_ticket == "Não" and c.get('tickets'):
+        if c.get('tickets'):
             tem_ticket = "Sim"
+            for tkt in c.get('tickets'):
+                if isinstance(tkt, dict) and tkt.get('id'):
+                    if str(tkt.get('id')) not in lista_tickets:
+                        lista_tickets.append(str(tkt.get('id')))
+                        
+        id_do_ticket = ", ".join(lista_tickets) if lista_tickets else "-"
 
         # Estatísticas de tempo
         stats = c.get('statistics') or {}
@@ -220,7 +228,8 @@ def process_data(conversas, mapping, admin_map):
             "Tempo Resolução": format_sla_string(time_close_sec),
             "CSAT Nota": (c.get('conversation_rating') or {}).get('rating'),
             "CSAT Comentario": (c.get('conversation_rating') or {}).get('remark'),
-            "Ticket Backoffice": tem_ticket
+            "Ticket Backoffice": tem_ticket,
+            "ID do Ticket": id_do_ticket
         }
         
         attrs = c.get('custom_attributes', {})
@@ -780,8 +789,7 @@ if 'df_final' in st.session_state:
     if aba_selecionada == "📋 Dados":
         with st.form("form_filtros_tabela"):
             st.write("🔍 Filtros da Pesquisa")
-            # Adicionamos mais uma coluna aqui (c_eq)
-            c_eq, c1, c2, c3, c4 = st.columns(5)
+            c_eq, c1, c2, c3, c4, c5 = st.columns(6)
             
             with c_eq:
                 equipes_unicas = sorted(df["Equipe"].astype(str).unique())
@@ -817,6 +825,9 @@ if 'df_final' in st.session_state:
                 else:
                     sel_status = []
 
+            with c5:
+                sel_tem_ticket = st.multiselect("🎫 Tem Ticket?", ["Sim", "Não"])
+
             aplicar = st.form_submit_button("Aplicar Filtros")
 
         df_view = df.copy()
@@ -838,6 +849,10 @@ if 'df_final' in st.session_state:
             
         if sel_status:
             df_view = df_view[df_view["Status do atendimento"].isin(sel_status)]
+            
+        # Aplica o filtro de ticket
+        if sel_tem_ticket:
+            df_view = df_view[df_view["Ticket Backoffice"].isin(sel_tem_ticket)]
 
         c_resumo, c_botao = st.columns([4, 1])
         
@@ -848,7 +863,8 @@ if 'df_final' in st.session_state:
             excel = gerar_excel_multias(df_view, cols_usuario)
             st.download_button("📥 Baixar Excel", data=excel, file_name="relatorio_filtrado.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="primary", use_container_width=True)
         
-        cols_display = ["ID", "Data", "Estado", "Equipe", "Atendente", "Link", "Tempo Resolução"] + cols_usuario
+        # Adiciona as duas colunas novas na exibição da tabela
+        cols_display = ["ID", "Data", "Estado", "Equipe", "Atendente", "Link", "Tempo Resolução", "Ticket Backoffice", "ID do Ticket"] + cols_usuario
         cols_existentes = [c for c in cols_display if c in df_view.columns]
         
         # Exibe a tabela filtrada
