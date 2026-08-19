@@ -52,7 +52,7 @@ if GEMINI_API_KEY:
     instrucao_sistema = """Você é um analista de suporte de qualidade sênior. O seu objetivo é analisar conversas de atendimento para identificar falhas no processo, oportunidades de melhoria e medir o nível de criticidade do cliente. Você está estritamente proibido de adicionar textos introdutórios, explicações ou narrar o seu raciocínio. Forneça apenas o texto final no formato exigido."""    
     # Recomendado usar o flash para rapidez ou o pro para maior precisão
     model = genai.GenerativeModel(
-        'gemma-4-31b-it',
+        'gemini-3.1-flash-lite',
         system_instruction=instrucao_sistema
     )
 
