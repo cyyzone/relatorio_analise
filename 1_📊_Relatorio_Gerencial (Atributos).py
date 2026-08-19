@@ -877,19 +877,21 @@ if 'df_final' in st.session_state:
                 if not texto_ticket:
                     st.error("Não foi possível ler o histórico dessa conversa. Verifique o ID.")
                 else:
-                    prompt = f""" 
-                    Você é um analisador de conversas de suporte premium. Analise a seguinte conversa de suporte completa:
-                    {texto_ticket}
+                    prompt = f"""Analise a conversa de suporte abaixo.
                     
-                    Responda de forma resumida e objetiva aos seguintes pontos:
-                    1. **Motivo do contato**: (O que o cliente queria?)
-                    2. **Quantos problemas relatados**: (Qual a dor?)
-                    3. **Principais dúvidas ou reclamações**:
-                    4. Ação do agente:
-                    5. **Finalizada por falta de contato?** (Sim/Não)
-                    6. **Potencial para automação por bot?** (0 a 10 e o motivo)
-                    7. **Oportunidade de melhoria:** (Se houver)
-                    """
+Responda APENAS com os 7 pontos solicitados, sem nenhum texto antes ou depois, sem introduções e estritamente em português.
+
+Conversa:
+{texto_ticket}
+
+Responda exatamente neste formato:
+1. Motivo do contato: [sua resposta]
+2. Quantos problemas relatados: [sua resposta]
+3. Principais dúvidas ou reclamações: [sua resposta]
+4. Ação do agente: [sua resposta]
+5. Finalizada por falta de contato?: [Sim ou Não]
+6. Potencial para automação por bot?: [Nota de 0 a 10] - [Motivo]
+7. Oportunidade de melhoria: [sua resposta]"""
                     resposta = chamar_gemini_seguro(prompt)
                     
                     st.success(f"Análise concluída para o ticket #{ticket_id_input}")
