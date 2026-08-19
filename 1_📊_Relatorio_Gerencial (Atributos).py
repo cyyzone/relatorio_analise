@@ -883,7 +883,7 @@ if 'df_final' in st.session_state:
                 if not texto_ticket:
                     st.error("Não foi possível ler o histórico dessa conversa. Verifique o ID.")
                 else:
-                    pprompt = f"""Extraia as 8 informações solicitadas desta conversa de suporte. 
+                    prompt = f"""Extraia as 8 informações solicitadas desta conversa de suporte. 
 Não adicione nenhum texto além das respostas.
 
 Conversa:
