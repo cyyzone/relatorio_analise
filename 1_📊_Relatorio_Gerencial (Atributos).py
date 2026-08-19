@@ -883,23 +883,28 @@ if 'df_final' in st.session_state:
                 if not texto_ticket:
                     st.error("Não foi possível ler o histórico dessa conversa. Verifique o ID.")
                 else:
-                    prompt = f"""Extraia as 8 informações solicitadas desta conversa de suporte. 
+                    pprompt = f"""Extraia as 8 informações solicitadas desta conversa de suporte. 
 Não adicione nenhum texto além das respostas.
 
 Conversa:
 {texto_ticket}
 
 Responda EXATAMENTE com este formato, linha por linha:
-1. Motivo do contato: [preencha aqui]
-2. Quantos problemas relatados: [preencha aqui]
-3. Principais dúvidas ou reclamações: [preencha aqui]
-4. Ação do agente: [preencha aqui]
-5. Finalizada por falta de contato?: [preencha aqui]
-6. Potencial para automação por bot?: [preencha aqui]
-7. Nível de criticidade: [Informe se o cliente estava tranquilo, irritado ou em situação crítica e o motivo]
-8. Oportunidade de melhoria: [Indique o melhor direcionamento ou ação corretiva para o caso]"""
+🎯 **Motivo do contato:** [preencha aqui]
+📌 **Quantos problemas relatados:** [preencha aqui]
+💭 **Principais dúvidas ou reclamações:** [preencha aqui]
+🛠️ **Ação do agente:** [preencha aqui]
+📞 **Finalizada por falta de contato?:** [preencha aqui]
+🤖 **Potencial para automação por bot?:** [preencha aqui]
+🚨 **Nível de criticidade:** [preencha aqui]
+💡 **Oportunidade de melhoria:** [preencha aqui]"""
                     resposta = chamar_gemini_seguro(prompt)
+                    
+                    # A tesoura ajustada para o novo formato
+                    if "**Motivo do contato:**" in resposta:
+                        resposta = "🎯 **Motivo do contato:**" + resposta.split("**Motivo do contato:**")[-1]
                     
                     st.success(f"Análise concluída para o ticket #{ticket_id_input}")
                     with st.expander("Ver Resultado da Análise", expanded=True):
-                        st.markdown(resposta)
+                        # O st.info cria um cartão com fundo azul super elegante
+                        st.info(resposta)
