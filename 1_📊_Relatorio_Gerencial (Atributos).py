@@ -906,21 +906,24 @@ Conversa:
 {texto_ticket}
 
 Responda EXATAMENTE com este formato, linha por linha:
-🎯 **Motivo do contato:** [preencha aqui]
-📌 **Quantos problemas relatados:** [preencha aqui]
-💭 **Principais dúvidas ou reclamações:** [preencha aqui]
-🛠️ **Ação do agente:** [preencha aqui]
-📞 **Finalizada por falta de contato?:** [preencha aqui]
-🤖 **Potencial para automação por bot?:** [preencha aqui]
-🚨 **Nível de criticidade:** [preencha aqui]
-💡 **Oportunidade de melhoria:** [preencha aqui]"""
+* 🎯 **Motivo do contato:** [preencha aqui]
+* 📌 **Quantos problemas relatados:** [preencha aqui]
+* 💭 **Principais dúvidas ou reclamações:** [preencha aqui]
+* 🛠️ **Ação do agente:** [preencha aqui]
+* 📞 **Finalizada por falta de contato?:** [preencha aqui]
+* 🤖 **Potencial para automação por bot?:** [preencha aqui]
+* 🚨 **Nível de criticidade:** [preencha aqui]
+* 💡 **Oportunidade de melhoria:** [preencha aqui]"""
+
                     resposta = chamar_gemini_seguro(prompt)
                     
-                    # A tesoura ajustada para o novo formato
+                    # A tesoura ajustada para o novo formato com asterisco
                     if "**Motivo do contato:**" in resposta:
-                        resposta = "🎯 **Motivo do contato:**" + resposta.split("**Motivo do contato:**")[-1]
+                        resposta = "* 🎯 **Motivo do contato:**" + resposta.split("**Motivo do contato:**")[-1]
+                    
+                    # Truque para forçar a quebra de linha e não deixar o texto grudado
+                    resposta = resposta.replace('\n', '\n\n')
                     
                     st.success(f"Análise concluída para o ticket #{ticket_id_input}")
                     with st.expander("Ver Resultado da Análise", expanded=True):
-                        # O st.info cria um cartão com fundo azul super elegante
                         st.info(resposta)
