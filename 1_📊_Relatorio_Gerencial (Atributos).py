@@ -5,6 +5,8 @@ import time
 import plotly.express as px
 from datetime import datetime, timedelta
 from io import BytesIO
+import google.generativeai as genai
+import re
 
 # Importação do utils
 from utils import check_password, logout_button
@@ -37,6 +39,44 @@ if not INTERCOM_ACCESS_TOKEN:
 
 HEADERS = {"Authorization": f"Bearer {INTERCOM_ACCESS_TOKEN}", "Accept": "application/json"}
 
+# Configuração da IA
+try:
+    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
+except:
+    GEMINI_API_KEY = st.sidebar.text_input("Chave da API Gemini", type="password", key="token_gemini")
+
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+    # Recomendado usar o flash para rapidez ou o pro para maior precisão
+    model = genai.GenerativeModel('gemini-1.5-flash')
+
+def ler_conversa_completa(c_id):
+    url = f"https://api.intercom.io/conversations/{c_id}"
+    try:
+        resp = requests.get(url, headers=HEADERS)
+        if resp.status_code == 200:
+            data = resp.json()
+            txt = f"INÍCIO: {data.get('source', {}).get('body', '')}\n"
+            for p in data.get('conversation_parts', {}).get('conversation_parts', []):
+                if p.get('body'):
+                    role = "CLIENTE" if p.get('author', {}).get('type') in ['user','lead'] else "AGENTE"
+                    txt += f"{role}: {p['body']}\n"
+            return re.sub(r'<[^>]+>', ' ', txt)
+    except:
+        pass
+    return ""
+
+def chamar_gemini_seguro(prompt):
+    if not GEMINI_API_KEY: return "⚠️ Chave da API do Gemini não configurada."
+    erro_final = ""
+    for attempt in range(3):
+        try:
+            response = model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            erro_final = str(e)
+            time.sleep(2 ** (attempt + 1))
+    return f"Falha na análise da IA. Detalhe do erro: {erro_final}"
 # Funções
 
 def format_sla_string(seconds):
@@ -802,9 +842,10 @@ if 'df_final' in st.session_state:
             excel = gerar_excel_multias(df_view, cols_usuario)
             st.download_button("📥 Baixar Excel", data=excel, file_name="relatorio_filtrado.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="primary", use_container_width=True)
         
-        cols_display = ["Data", "Estado", "Equipe", "Atendente", "Link", "Tempo Resolução"] + cols_usuario
+        cols_display = ["ID", "Data", "Estado", "Equipe", "Atendente", "Link", "Tempo Resolução"] + cols_usuario
         cols_existentes = [c for c in cols_display if c in df_view.columns]
         
+        # Exibe a tabela filtrada
         st.dataframe(
             df_view[cols_existentes], 
             use_container_width=True, 
@@ -813,3 +854,44 @@ if 'df_final' in st.session_state:
                 "Link": st.column_config.LinkColumn("Link", display_text="🔗 Abrir Conversa")
             }
         )
+        
+        st.divider()
+        
+        # Área de Análise com Inteligência Artificial
+        st.subheader("🤖 Analisar Conversa com IA")
+        st.write("Copie o ID de uma conversa da tabela acima e cole aqui para gerar um resumo inteligente.")
+        
+        col_id, col_btn = st.columns([2, 1])
+        with col_id:
+            ticket_id_input = st.text_input("ID da Conversa:")
+        
+        with col_btn:
+            # Espaçamento para alinhar o botão com o campo de texto
+            st.markdown("<br>", unsafe_allow_html=True)
+            analisar_btn = st.button("Gerar Análise", type="primary", use_container_width=True)
+            
+        if analisar_btn and ticket_id_input:
+            with st.spinner("Lendo histórico e chamando a IA..."):
+                texto_ticket = ler_conversa_completa(ticket_id_input)
+                
+                if not texto_ticket:
+                    st.error("Não foi possível ler o histórico dessa conversa. Verifique o ID.")
+                else:
+                    prompt = f""" 
+                    Você é um analisador de conversas de suporte premium. Analise a seguinte conversa de suporte completa:
+                    {texto_ticket}
+                    
+                    Responda de forma resumida e objetiva aos seguintes pontos:
+                    1. **Motivo do contato**: (O que o cliente queria?)
+                    2. **Quantos problemas relatados**: (Qual a dor?)
+                    3. **Principais dúvidas ou reclamações**:
+                    4. Ação do agente:
+                    5. **Finalizada por falta de contato?** (Sim/Não)
+                    6. **Potencial para automação por bot?** (0 a 10 e o motivo)
+                    7. **Oportunidade de melhoria:** (Se houver)
+                    """
+                    resposta = chamar_gemini_seguro(prompt)
+                    
+                    st.success(f"Análise concluída para o ticket #{ticket_id_input}")
+                    with st.expander("Ver Resultado da Análise", expanded=True):
+                        st.markdown(resposta)
