@@ -47,8 +47,14 @@ except:
 
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
+    
+    # Criamos a regra de ouro que a IA nunca pode quebrar
+    instrucao_sistema = """Você é um analista de suporte de qualidade sênior. O seu objetivo é analisar conversas de atendimento para identificar falhas no processo, oportunidades de melhoria e medir o nível de criticidade do cliente. Você está estritamente proibido de adicionar textos introdutórios, explicações ou narrar o seu raciocínio. Forneça apenas o texto final no formato exigido."""    
     # Recomendado usar o flash para rapidez ou o pro para maior precisão
-    model = genai.GenerativeModel('gemma-4-31b-it')
+    model = genai.GenerativeModel(
+        'gemma-4-31b-it',
+        system_instruction=instrucao_sistema
+    )
 
 def ler_conversa_completa(c_id):
     url = f"https://api.intercom.io/conversations/{c_id}"
@@ -877,21 +883,21 @@ if 'df_final' in st.session_state:
                 if not texto_ticket:
                     st.error("Não foi possível ler o histórico dessa conversa. Verifique o ID.")
                 else:
-                    prompt = f"""Analise a conversa de suporte abaixo.
-                    
-Responda APENAS com os 7 pontos solicitados, sem nenhum texto antes ou depois, sem introduções e estritamente em português.
+                    prompt = f"""Extraia as 8 informações solicitadas desta conversa de suporte. 
+Não adicione nenhum texto além das respostas.
 
 Conversa:
 {texto_ticket}
 
-Responda exatamente neste formato:
-1. Motivo do contato: [sua resposta]
-2. Quantos problemas relatados: [sua resposta]
-3. Principais dúvidas ou reclamações: [sua resposta]
-4. Ação do agente: [sua resposta]
-5. Finalizada por falta de contato?: [Sim ou Não]
-6. Potencial para automação por bot?: [Nota de 0 a 10] - [Motivo]
-7. Oportunidade de melhoria: [sua resposta]"""
+Responda EXATAMENTE com este formato, linha por linha:
+1. Motivo do contato: [preencha aqui]
+2. Quantos problemas relatados: [preencha aqui]
+3. Principais dúvidas ou reclamações: [preencha aqui]
+4. Ação do agente: [preencha aqui]
+5. Finalizada por falta de contato?: [preencha aqui]
+6. Potencial para automação por bot?: [preencha aqui]
+7. Nível de criticidade: [Informe se o cliente estava tranquilo, irritado ou em situação crítica e o motivo]
+8. Oportunidade de melhoria: [Indique o melhor direcionamento ou ação corretiva para o caso]"""
                     resposta = chamar_gemini_seguro(prompt)
                     
                     st.success(f"Análise concluída para o ticket #{ticket_id_input}")
